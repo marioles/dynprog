@@ -8,7 +8,7 @@ with open("README.md") as f:
 setup(
     name="dynprog",
     version="0.1.0",
-    description="Dynammic programming",
+    description="Dynamic programming",
     long_description=readme,
     author="Mario Morales",
     author_email="mario@moralesalfaro.cl",
