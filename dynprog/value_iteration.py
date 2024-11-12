@@ -1,6 +1,3 @@
-import numpy as np
-
-
 def get_income_mean():
     return 1
 
