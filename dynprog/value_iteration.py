@@ -98,28 +98,28 @@ def create_grid(lower_bound, upper_bound=None, length=100):
     return grid_ls
 
 
-def get_expected_value(value_dd, state, savings):
+def get_expected_value(value_next_dd, state, savings):
     probability_dd = get_probability(state=state)
     expected = 0
-    for next_state, state_value_dd in value_dd.items():
+    for next_state, state_value_dd in value_next_dd.items():
         next_state_probability = probability_dd.get(next_state, 0)
         next_state_value = state_value_dd.get(savings, 0)
         expected += next_state_probability * next_state_value
     return expected
 
 
-def calculate_period_value(savings, interest_rate, cash_on_hand, value_dd, state, beta):
+def calculate_period_value(savings, interest_rate, cash_on_hand, value_next_dd, state, beta):
     consumption = calculate_consumption(savings=savings, interest_rate=interest_rate, cash_on_hand=cash_on_hand)
     period_utility = calculate_utility(consumption=consumption)
-    next_period_value = get_expected_value(value_dd=value_dd, state=state, savings=savings)
+    next_period_value = get_expected_value(value_next_dd=value_next_dd, state=state, savings=savings)
     value = period_utility + beta * next_period_value
     return value
 
 
-def calculate_distance(value_dd, prev_dd):
-    value_key_ls = list(value_dd.keys())
+def calculate_distance(state_dd, prev_dd):
+    value_key_ls = list(state_dd.keys())
     prev_key_ls = list(prev_dd.keys())
     key_ls = sorted([i for i in value_key_ls if i in prev_key_ls])
-    distance_ls = [abs(value_dd.get(key, 0) - prev_dd.get(key, 0)) for key in key_ls]
+    distance_ls = [abs(state_dd.get(key, 0) - prev_dd.get(key, 0)) for key in key_ls]
     distance = max(distance_ls)
     return distance
