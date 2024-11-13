@@ -175,8 +175,6 @@ class ValueIterator(object):
 
         bins = int((second_upper_bound - second_lower_bound) / grid_spacing)
         cash_on_hand_ls = [second_lower_bound + i * grid_spacing for i in range(bins + 1)]
-        # cash_on_hand_ls.insert(0, lower_bound)
-        # cash_on_hand_ls.append(upper_bound)
         cash_on_hand_ls = [round(i, 3) for i in cash_on_hand_ls]
 
         return cash_on_hand_ls
@@ -249,7 +247,7 @@ class ValueIterator(object):
             value_dd[state] = state_value_dd.copy()
         return value_dd
 
-    def _calculate_distance(self, period_dd, prev_dd):
+    def _calculate_distance(self, period_dd: dict, prev_dd: dict) -> float:
         period_df = self._convert_dict_to_frame(dd=period_dd, key="period")
         prev_df = self._convert_dict_to_frame(dd=prev_dd, key="prev")
         value_df = pd.concat([period_df, prev_df], axis="columns")
@@ -267,12 +265,12 @@ class ValueIterator(object):
         return distance
 
     @staticmethod
-    def _convert_dict_to_frame(dd, key):
+    def _convert_dict_to_frame(dd: dict, key: str) -> pd.DataFrame:
         df = pd.DataFrame(dd)
         df = pd.concat([df], axis="columns", keys=[key])
         return df
 
-    def optimize(self):
+    def optimize(self) -> dict:
         self._set_value_dict()
         max_iterations = self.get_param(param="max_iterations")
         epsilon = self.get_param(param="epsilon")
