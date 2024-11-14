@@ -185,8 +185,13 @@ class ValueIterator(object):
 
     def _construct_value_dict(self, cash_on_hand_ls: list, fill_value: Optional[float] = None) -> dict:
         state_ls = self.get_param(param="state_ls")
-        fill_dd = {i: fill_value for i in cash_on_hand_ls}
-        value_dd = {state: fill_dd.copy() for state in state_ls}
+        fill_dd = {
+            "consumption": fill_value,
+            "savings": fill_value,
+            "value": fill_value,
+        }
+        grid_dd = {i: fill_dd for i in cash_on_hand_ls}
+        value_dd = {state: grid_dd.copy() for state in state_ls}
         return value_dd
 
     def _set_value_dict(self, value_next_dd: Optional[dict] = None) -> None:
@@ -217,23 +222,30 @@ class ValueIterator(object):
             probability = probability_dd[prev_state][state]
             income = self._get_income(state=state)
             cash_on_hand = round(income + savings, 3)
-            state_value = value_next_dd[state][cash_on_hand]
+            state_value = value_next_dd[state][cash_on_hand]["value"]
             expected_utility += probability * state_value
         return expected_utility
 
-    def _calculate_state_value(self, cash_on_hand: float, state: str, income: float) -> float:
+    def _calculate_state_value(self, cash_on_hand: float, state: str, income: float) -> dict:
         beta = self.get_param(param="beta")
         natural_borrowing_limit = self.get_param(param="natural_borrowing_limit")
 
         savings = cash_on_hand - income
         if abs(savings) > abs(natural_borrowing_limit):
+            consumption = np.NaN
             value = np.NaN
         else:
             consumption = self._calculate_consumption(cash_on_hand=cash_on_hand, savings=savings)
             utility = self._calculate_utility(consumption=consumption)
             expected = self._calculate_expected_utility(savings=savings, prev_state=state)
             value = utility + beta * expected
-        return value
+
+        output_dd = {
+            "consumption": consumption,
+            "savings": savings,
+            "value": value,
+        }
+        return output_dd
 
     def _calculate_period_value(self) -> dict:
         state_ls = self.get_param(param="state_ls")
@@ -248,8 +260,8 @@ class ValueIterator(object):
         return value_dd
 
     def _calculate_distance(self, period_dd: dict, prev_dd: dict) -> float:
-        period_df = self._convert_dict_to_frame(dd=period_dd, key="period")
-        prev_df = self._convert_dict_to_frame(dd=prev_dd, key="prev")
+        period_df = self._convert_dict_to_frame(dd=period_dd, key="period", filter_key="value")
+        prev_df = self._convert_dict_to_frame(dd=prev_dd, key="prev", filter_key="value")
         value_df = pd.concat([period_df, prev_df], axis="columns")
         value_df = value_df.dropna(axis="index")
 
@@ -265,7 +277,18 @@ class ValueIterator(object):
         return distance
 
     @staticmethod
-    def _convert_dict_to_frame(dd: dict, key: str) -> pd.DataFrame:
+    def _filter_dict(dd: dict, filter_key: str) -> dict:
+        filter_dd = dict()
+        for state, value_dd in dd.items():
+            filter_dd.setdefault(state, dict())
+            update_dd = {k: v[filter_key] for k, v in value_dd.items()}
+            filter_dd[state].update(update_dd)
+        return filter_dd
+
+    def _convert_dict_to_frame(self, dd: dict, key: str, filter_key: Optional[str] = None) -> pd.DataFrame:
+        if filter_key is not None:
+            dd = self._filter_dict(dd=dd, filter_key=filter_key)
+
         df = pd.DataFrame(dd)
         df = pd.concat([df], axis="columns", keys=[key])
         return df
